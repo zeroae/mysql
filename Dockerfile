@@ -1,7 +1,13 @@
 FROM percona:5.6
 
-ENV CONTAINERPILOT_VER 2.6.0
-ENV CONTAINERPILOT file:///etc/containerpilot.json
+ENV \
+    CONSUL_VERSION=0.7.2                                                                        \
+    CONSUL_SHA256=aa97f4e5a552d986b2a36d48fdc3a4a909463e7de5f726f3c5a89b8a1be74a58              \
+    CONSUL_TEMPLATE_VERSION=0.16.0                                                              \
+    CONSUL_TEMPLATE_SHA256=064b0b492bb7ca3663811d297436a4bbf3226de706d2b76adade7021cd22e156     \
+    CONTAINERPILOT_VERSION=2.6.0                                                                \
+    CONTAINERPILOT_SHA1=c1bcd137fadd26ca2998eec192d04c08f62beb1f                                \
+    CONTAINERPILOT=file:///etc/containerpilot.json
 
 # By keeping a lot of discrete steps in a single RUN we can clean up after
 # ourselves in the same layer. This is gross but it saves ~100MB in the image
@@ -26,18 +32,18 @@ RUN set -ex \
     # \
     # Add Consul from https://releases.hashicorp.com/consul \
     # \
-    && export CHECKSUM=5dbfc555352bded8a39c7a8bf28b5d7cf47dec493bc0496e21603c84dfe41b4b \
-    && curl -Lvo /tmp/consul.zip https://releases.hashicorp.com/consul/0.7.1/consul_0.7.1_linux_amd64.zip \
-    && echo "${CHECKSUM}  /tmp/consul.zip" | sha256sum -c \
+    && curl --retry 7 --fail -Lvo /tmp/consul.zip \
+         "https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip" \
+    && echo "${CONSUL_SHA256}  /tmp/consul.zip" | sha256sum -c \
     && unzip /tmp/consul.zip -d /usr/local/bin \
     && rm /tmp/consul.zip \
     && mkdir /config \
     # \
     # Add ContainerPilot and set its configuration file path \
     # \
-    && export CONTAINERPILOT_CHECKSUM=c1bcd137fadd26ca2998eec192d04c08f62beb1f \
-    && curl -Lvo /tmp/containerpilot.tar.gz "https://github.com/joyent/containerpilot/releases/download/${CONTAINERPILOT_VER}/containerpilot-${CONTAINERPILOT_VER}.tar.gz" \
-    && echo "${CONTAINERPILOT_CHECKSUM}  /tmp/containerpilot.tar.gz" | sha1sum -c \
+    && curl --retry 7 --fail -Lso /tmp/containerpilot.tar.gz \
+         "https://github.com/joyent/containerpilot/releases/download/${CONTAINERPILOT_VERSION}/containerpilot-${CONTAINERPILOT_VERSION}.tar.gz" \
+    && echo "${CONTAINERPILOT_SHA1}  /tmp/containerpilot.tar.gz" | sha1sum -c \
     && tar zxf /tmp/containerpilot.tar.gz -C /usr/local/bin \
     && rm /tmp/containerpilot.tar.gz \
     # \
